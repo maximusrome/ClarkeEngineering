@@ -20,6 +20,7 @@ struct GeneralTabView: View {
                 VStack(alignment: .leading, spacing: 30) {
                     Text("Let's start with some general information")
                         .font(.system(size: 22)).bold()
+                        .padding(.horizontal)
                     VStack(spacing: 35) {
                         CustomTextField(text: $manager.userInfo.address, placeholderText: "Address")
                         CustomTextField(text: $manager.userInfo.clientName, placeholderText: "Client Name")
@@ -27,8 +28,6 @@ struct GeneralTabView: View {
                         CustomTextField(text: $manager.userInfo.inspector, placeholderText: "Inspector")
                         CustomTextField(text: $manager.userInfo.testType, placeholderText: "Test Type")
                     }
-//                    Text("Tips for filling in field")
-//                        .opacity(0.4).padding(.top, 20)
                 }.padding(30)
                 Spacer()
             }

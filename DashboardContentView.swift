@@ -15,7 +15,6 @@ enum TabViewItem: String, CaseIterable {
     case general = "square.and.pencil"
     case anchor = "a.circle"
     case add = "plus.circle"
-    case comment = "book.fill"
     case done = "checkmark.seal.fill"
     
     /// Custom title
@@ -52,6 +51,7 @@ struct DashboardContentView: View {
                         Image(uiImage: uiImage)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
+                            .padding(.horizontal, 140)
                     }
                     StepsViewSection
                 }
@@ -93,7 +93,7 @@ struct DashboardContentView: View {
                                 )
                         }
                         .padding()
-                        .padding(.horizontal, 50)
+                        .padding(.horizontal, 80)
                         .foregroundColor(selectedStep == TabViewItem.allCases[id] ? .accentColor : Color(#colorLiteral(red: 0.8039215803, green: 0.8039215803, blue: 0.8039215803, alpha: 1)))
                         .onTapGesture {
                             UIImpactFeedbackGenerator().impactOccurred()
@@ -118,8 +118,6 @@ struct DashboardContentView: View {
                 AnchorTabView(manager: manager)
             case .add:
                 AddTabView(manager: manager)
-            case .comment:
-                SummaryTabView(manager: manager)
             case .done:
                 DoneTabView(manager: manager)
             }

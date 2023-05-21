@@ -28,7 +28,7 @@ struct AddTabView: View {
                         Button(action: {
                             self.showImagePicker = true
                         }, label: {
-                            Text("Add Pictures")
+                            Text("Upload Anchor Location Map")
                                 .font(.title3)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
@@ -75,6 +75,7 @@ struct AddTabView: View {
                         .shadow(radius: 5)
                 })
             }.padding(30)
+                .padding(.bottom, 100)
         })
         .sheet(isPresented: $showAddWorkFlow, content: {
             AddWorkExperience(manager: manager)
@@ -150,7 +151,7 @@ struct ImageCanvas: View {
             image.draw(in: CGRect(origin: .zero, size: imageSize))
             
             for pointWithID in points {
-                let yOffset: CGFloat = 30
+                let yOffset: CGFloat = 50
                 let point = CGPoint(x: (pointWithID.point.x - 10) / scaleFactor, y: (pointWithID.point.y - yOffset) / scaleFactor)
                 let number = pointWithID.number
                 
@@ -158,6 +159,10 @@ struct ImageCanvas: View {
                 cgContext.setStrokeColor(UIColor.red.cgColor)
                 cgContext.setLineWidth(2 / scaleFactor)
                 cgContext.stroke(rect)
+                
+                let redDotPoint = CGPoint(x: point.x + squareSize.width / (2 * scaleFactor), y: point.y + squareSize.height / scaleFactor + 10 / scaleFactor)
+                            cgContext.setFillColor(UIColor.red.cgColor)
+                            cgContext.fillEllipse(in: CGRect(x: redDotPoint.x - 2.5 / scaleFactor, y: redDotPoint.y - 2.5 / scaleFactor, width: 5 / scaleFactor, height: 5 / scaleFactor))
                 
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.alignment = .center
@@ -193,8 +198,9 @@ struct AddWorkExperience: View {
         ScrollView(.vertical, showsIndicators: false, content: {
             Spacer(minLength: 20)
             VStack(alignment: .leading, spacing: 30) {
-                Text("Anchor")
+                Text("Anchor Information")
                     .font(.system(size: 22)).bold()
+                    .padding(.horizontal)
                 VStack(spacing: 35) {
                     CustomTextField(text: $workModel.location, placeholderText: "Location")
                     CustomTextField(text: $workModel.load, placeholderText: "Load")
@@ -202,6 +208,7 @@ struct AddWorkExperience: View {
                     HStack {
                         Text("Include picture?")
                             .font(.system(size: 22)).bold()
+                            .padding(.horizontal)
                         Spacer()
                         Toggle("", isOn: $workModel.pickPhoto).labelsHidden().accentColor(.accentColor)
                     }.padding(.bottom, 20)

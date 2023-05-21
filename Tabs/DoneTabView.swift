@@ -15,8 +15,23 @@ struct DoneTabView: View {
     @State private var showShareSheet = false
     
     var body: some View {
-        VStack {
-            Spacer()
+        ScrollView(.vertical, showsIndicators: false, content: {
+            Spacer(minLength: 20)
+            VStack(alignment: .leading, spacing: 30) {
+                Text("Additional Comments")
+                    .font(.system(size: 22)).bold()
+                TextEditor(text: $manager.summary)
+                    .frame(height: UIScreen.main.bounds.height/3)
+                    .foregroundColor(manager.summary == PDFManager.summaryPlaceholder ? .gray : .black)
+                    .padding()
+                    .background(RoundedRectangle(cornerRadius: 15).strokeBorder(Color(#colorLiteral(red: 0.8039215803, green: 0.8039215803, blue: 0.8039215803, alpha: 1)), lineWidth: 2))
+                    .onTapGesture {
+                        if manager.summary == PDFManager.summaryPlaceholder {
+                            manager.summary = ""
+                        }
+                    }
+            }.padding(30)
+            Spacer(minLength: 330)
             Button(action: {
                 generatePDF()
             }, label: {
@@ -27,12 +42,12 @@ struct DoneTabView: View {
                         .foregroundColor(.white).bold()
                 }
             }).frame(height: 60).padding(30)
-        }.sheet(isPresented: $showShareSheet) {
+        }).sheet(isPresented: $showShareSheet) {
             ActivityView(activityItems: [pdfURL as Any])
         }
     }
     private var pdfURL: URL {
-        let fileName = "\(manager.userInfo.clientName)_pdf"
+        let fileName = "\(manager.userInfo.clientName).pdf"
         let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let fileURL = directory.appendingPathComponent(fileName).appendingPathExtension("pdf")
         return fileURL as URL
@@ -51,9 +66,9 @@ struct DoneTabView: View {
             try renderer.writePDF(to: pdfURL) { context in
                 let address = NSAttributedString(string: manager.userInfo.address, attributes: [.font: UIFont.boldSystemFont(ofSize: 20),.underlineStyle: NSUnderlineStyle.single.rawValue])
                 let title = NSAttributedString(string: "Anchor Bolt Test Report", attributes: [.font: UIFont.boldSystemFont(ofSize: 20)])
-                let client = NSAttributedString(string: "Client:", attributes: [.font: UIFont.boldSystemFont(ofSize: 20)])
+                let client = NSAttributedString(string: "Client:", attributes: [.font: UIFont.systemFont(ofSize: 20)])
                 let clientName = NSAttributedString(string: manager.userInfo.clientName, attributes: [.font: UIFont.boldSystemFont(ofSize: 20),.underlineStyle: NSUnderlineStyle.single.rawValue])
-                let date = NSAttributedString(string: manager.userInfo.date, attributes: [.font: UIFont.boldSystemFont(ofSize: 20)])
+                let date = NSAttributedString(string: manager.userInfo.date, attributes: [.font: UIFont.systemFont(ofSize: 20)])
                 let firstLine = NSMutableAttributedString(string: "20 NORTH BROADWAY, SUITE 1", attributes: [.font: UIFont.systemFont(ofSize: 15)])
                 let secondLine = NSMutableAttributedString(string: "NYACK, NY 10960", attributes: [.font: UIFont.systemFont(ofSize: 15)])
                 let thirdLine = NSMutableAttributedString(string: "845.353.6686", attributes: [.font: UIFont.systemFont(ofSize: 15)])
@@ -78,7 +93,7 @@ struct DoneTabView: View {
 
                 address.draw(at: CGPoint(x: pageWidth / 2 - address.size().width / 2, y: 50))
                 title.draw(at: CGPoint(x: pageWidth / 2 - title.size().width / 2, y: 80))
-                client.draw(at: CGPoint(x: pageWidth / 2 - client.size().width / 2, y: 150))
+                client.draw(at: CGPoint(x: pageWidth / 2 - client.size().width / 2, y: 155))
                 clientName.draw(at: CGPoint(x: pageWidth / 2 - clientName.size().width / 2, y: 180))
                 date.draw(at: CGPoint(x: pageWidth / 2 - date.size().width / 2, y: 210))
                 firstLine.draw(at: CGPoint(x: pageWidth / 2 - firstLine.size().width / 2, y: 440))
@@ -168,9 +183,13 @@ struct DoneTabView: View {
                             font = UIFont.systemFont(ofSize: 12)
                         }
                         
+                        let paragraphStyle = NSMutableParagraphStyle()
+                        paragraphStyle.alignment = .center
+
                         let textAttributes = [
                             NSAttributedString.Key.font: font,
-                            NSAttributedString.Key.foregroundColor: UIColor.black
+                            NSAttributedString.Key.foregroundColor: UIColor.black,
+                            NSAttributedString.Key.paragraphStyle: paragraphStyle
                         ]
                         let attributedText = NSAttributedString(string: text, attributes: textAttributes)
                         attributedText.draw(in: paddedCellRect)
@@ -189,7 +208,7 @@ struct DoneTabView: View {
                 let numberOfRows2 = manager.workExperience.count + 1
                 let numberOfColumns2 = 4
                 
-                let columnWidths2: [CGFloat] = [40, 350, 50, 100]
+                let columnWidths2: [CGFloat] = [40, 320, 80, 100]
                 
                 // Define header titles
                 let headers = ["#", "Location", "Load (lbf)", "Comment"]
@@ -338,59 +357,61 @@ struct DoneTabView: View {
                     let imageRect = CGRect(x: centerX, y: centerY + 40, width: imageWidth, height: imageHeight)
                     image.draw(in: imageRect)
                 }
+                let locationMap = NSAttributedString(string: "Location Map", attributes: [.font: UIFont.boldSystemFont(ofSize: 20),.underlineStyle: NSUnderlineStyle.single.rawValue])
+                locationMap.draw(at: CGPoint(x: pageWidth / 2 - locationMap.size().width / 2, y: 620))
                 footer.draw(at: CGPoint(x: 40, y: pageHeight - 120))
                 
-                context.beginPage()
-                let origin = CGPoint(x: 50, y: 50) // Adjust the y-coordinate to position the table on the page
-                let rowHeightP: CGFloat = 200.0 // Adjust the row height as needed
-                let columnWidths = [CGFloat((pageWidth - 100) / 2 ), CGFloat((pageWidth - 100) / 2 )] // Adjust the column widths as needed
-                //let padding: CGFloat = 5.0 // Adjust the padding as needed
-                var yPosition = origin.y
-
-                for workExperience in manager.workExperience {
-                    if let image = workExperience.image {
-                        // Draw the image
-                        let imageSize = image.size
-                        _ = imageSize.width / imageSize.height
-                        let availableWidth = columnWidths[0] - 2 * padding
-                        let availableHeight = rowHeightP - 2 * padding
-                        var imageRect = CGRect.zero
-                        if imageSize.width > availableWidth || imageSize.height > availableHeight {
-                            let targetAspectRatio = min(availableWidth / imageSize.width, availableHeight / imageSize.height)
-                            let targetSize = CGSize(width: imageSize.width * targetAspectRatio, height: imageSize.height * targetAspectRatio)
-                            let x = origin.x + columnWidths[0] / 2 - targetSize.width / 2
-                            let y = yPosition + rowHeightP / 2 - targetSize.height / 2
-                            imageRect = CGRect(origin: CGPoint(x: x, y: y), size: targetSize)
-                        } else {
-                            let x = origin.x + columnWidths[0] / 2 - imageSize.width / 2
-                            let y = yPosition + rowHeightP / 2 - imageSize.height / 2
-                            imageRect = CGRect(origin: CGPoint(x: x, y: y), size: imageSize)
-                        }
-                        image.draw(in: imageRect)
-                        
-                        // Draw the picture comment
-                        let commentOrigin = CGPoint(x: origin.x + columnWidths[0] + padding, y: yPosition + padding)
-                        let commentText = workExperience.pictureComment as NSString
-                        let attributes: [NSAttributedString.Key: Any] = [            .foregroundColor: UIColor.black,            .font: UIFont.systemFont(ofSize: 14)        ]
-                        commentText.draw(at: commentOrigin, withAttributes: attributes)
-                        
-                        // Draw table lines
-                        let cgContext = context.cgContext
-                        cgContext.move(to: CGPoint(x: origin.x, y: yPosition))
-                        cgContext.addLine(to: CGPoint(x: origin.x, y: yPosition + rowHeightP))
-                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths.reduce(0, +), y: yPosition + rowHeightP))
-                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths.reduce(0, +), y: yPosition))
-                        cgContext.closePath()
-                        cgContext.strokePath()
-                        
-                        cgContext.move(to: CGPoint(x: origin.x + columnWidths[0], y: yPosition))
-                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths[0], y: yPosition + rowHeightP))
-                        cgContext.strokePath()
-                        
-                        // Update the y-position for the next image
-                        yPosition += rowHeightP + 20
-                    }
-                }
+//                context.beginPage()
+//                let origin = CGPoint(x: 50, y: 50) // Adjust the y-coordinate to position the table on the page
+//                let rowHeightP: CGFloat = 200.0 // Adjust the row height as needed
+//                let columnWidths = [CGFloat((pageWidth - 100) / 2 ), CGFloat((pageWidth - 100) / 2 )] // Adjust the column widths as needed
+//                //let padding: CGFloat = 5.0 // Adjust the padding as needed
+//                var yPosition = origin.y
+//
+//                for workExperience in manager.workExperience {
+//                    if let image = workExperience.image {
+//                        // Draw the image
+//                        let imageSize = image.size
+//                        _ = imageSize.width / imageSize.height
+//                        let availableWidth = columnWidths[0] - 2 * padding
+//                        let availableHeight = rowHeightP - 2 * padding
+//                        var imageRect = CGRect.zero
+//                        if imageSize.width > availableWidth || imageSize.height > availableHeight {
+//                            let targetAspectRatio = min(availableWidth / imageSize.width, availableHeight / imageSize.height)
+//                            let targetSize = CGSize(width: imageSize.width * targetAspectRatio, height: imageSize.height * targetAspectRatio)
+//                            let x = origin.x + columnWidths[0] / 2 - targetSize.width / 2
+//                            let y = yPosition + rowHeightP / 2 - targetSize.height / 2
+//                            imageRect = CGRect(origin: CGPoint(x: x, y: y), size: targetSize)
+//                        } else {
+//                            let x = origin.x + columnWidths[0] / 2 - imageSize.width / 2
+//                            let y = yPosition + rowHeightP / 2 - imageSize.height / 2
+//                            imageRect = CGRect(origin: CGPoint(x: x, y: y), size: imageSize)
+//                        }
+//                        image.draw(in: imageRect)
+//
+//                        // Draw the picture comment
+//                        let commentOrigin = CGPoint(x: origin.x + columnWidths[0] + padding, y: yPosition + padding)
+//                        let commentText = workExperience.pictureComment as NSString
+//                        let attributes: [NSAttributedString.Key: Any] = [            .foregroundColor: UIColor.black,            .font: UIFont.systemFont(ofSize: 14)        ]
+//                        commentText.draw(at: commentOrigin, withAttributes: attributes)
+//
+//                        // Draw table lines
+//                        let cgContext = context.cgContext
+//                        cgContext.move(to: CGPoint(x: origin.x, y: yPosition))
+//                        cgContext.addLine(to: CGPoint(x: origin.x, y: yPosition + rowHeightP))
+//                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths.reduce(0, +), y: yPosition + rowHeightP))
+//                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths.reduce(0, +), y: yPosition))
+//                        cgContext.closePath()
+//                        cgContext.strokePath()
+//
+//                        cgContext.move(to: CGPoint(x: origin.x + columnWidths[0], y: yPosition))
+//                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths[0], y: yPosition + rowHeightP))
+//                        cgContext.strokePath()
+//
+//                        // Update the y-position for the next image
+//                        yPosition += rowHeightP + 20
+//                    }
+//                }
             }
             showShareSheet = true
         } catch {

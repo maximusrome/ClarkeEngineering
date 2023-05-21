@@ -18,8 +18,9 @@ struct AnchorTabView: View {
         ScrollView(.vertical, showsIndicators: false, content: {
             Spacer(minLength: 20)
             VStack(alignment: .leading, spacing: 30) {
-                Text("Enter in the general anchor information")
+                Text("Enter the general anchor information")
                     .font(.system(size: 22)).bold()
+                    .padding(.horizontal)
                 VStack(spacing: 35) {
                     CustomTextField(text: $manager.userInfo.anchor, placeholderText: "Anchor")
                     CustomTextField(text: $manager.userInfo.baseMaterial, placeholderText: "Base Material")
@@ -27,8 +28,6 @@ struct AnchorTabView: View {
                     CustomTextField(text: $manager.userInfo.adhesive, placeholderText: "Adhesive")
                     CustomTextField(text: $manager.userInfo.drillDirection, placeholderText: "Drill Direction")
                 }
-//                Text("Tips for filling in fields")
-//                    .opacity(0.4).padding(.top, 20)
                 Spacer(minLength: bottomPadding)
             }.padding(30)
             Spacer(minLength: 100)

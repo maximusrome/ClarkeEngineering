@@ -7,21 +7,25 @@
 
 import SwiftUI
 
-/// Custom text field
 struct CustomTextField: View {
     
     @Binding var text: String
     @State var isEditing: Bool = false
-    @State var titleText: String?
     var placeholderText: String
     
-    // MARK: - Main rendering function
     var body: some View {
-        VStack {
-            TextField(placeholderText, text: $text)
-                .font(.system(size: 25, weight: .bold))
-            Rectangle().frame(height: 1.5)
-                .foregroundColor(isEditing ? .accentColor : Color(#colorLiteral(red: 0.8039215803, green: 0.8039215803, blue: 0.8039215803, alpha: 1)))
+        TextField(placeholderText, text: $text) { isEditing in
+            self.isEditing = isEditing
+        } onCommit: {
         }
+        .font(.system(size: 20))
+        .padding(10)
+        .background(Color.white)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(self.isEditing ? Color.blue : Color.gray, lineWidth: 2)
+        )
+        .foregroundColor(self.isEditing ? Color.black : Color.black)
+        .padding(.horizontal)
     }
 }
