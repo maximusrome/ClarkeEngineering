@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Clarke Engineering
 
 An iOS application for creating comprehensive engineering inspection reports, specifically designed for anchor testing and structural assessments.
@@ -142,3 +143,6 @@ This project is proprietary software developed for Clarke Engineering.
 **Version**: 1.0  
 **Last Updated**: 2024  
 **Developer**: Max Rome
+=======
+# ClarkeEngineering
+>>>>>>> 7f111b4c8ae8784e56f3ff4c96b7cd1767cfb7c5
