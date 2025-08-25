@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Clarke Engineering
 
 An iOS application for creating comprehensive engineering inspection reports, specifically designed for anchor testing and structural assessments.
