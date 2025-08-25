@@ -4,9 +4,6 @@
 //
 //  Created by Max Rome on 8/19/22.
 //
-//
-//import SwiftUI
-//
 
 import SwiftUI
 

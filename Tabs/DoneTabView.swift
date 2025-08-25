@@ -21,17 +21,24 @@ struct DoneTabView: View {
                 Text("Additional Comments")
                     .font(.system(size: 22)).bold()
                 TextEditor(text: $manager.summary)
+                    .font(.system(size: 20))
                     .frame(height: UIScreen.main.bounds.height/3)
                     .foregroundColor(manager.summary == PDFManager.summaryPlaceholder ? .gray : .black)
                     .padding()
-                    .background(RoundedRectangle(cornerRadius: 15).strokeBorder(Color(#colorLiteral(red: 0.8039215803, green: 0.8039215803, blue: 0.8039215803, alpha: 1)), lineWidth: 2))
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.gray, lineWidth: 2)
+                    )
+                    .foregroundColor(Color.black)
                     .onTapGesture {
                         if manager.summary == PDFManager.summaryPlaceholder {
                             manager.summary = ""
                         }
                     }
             }.padding(30)
-            Spacer(minLength: 330)
+                .padding(.horizontal)
+            Spacer(minLength: 250)
             Button(action: {
                 generatePDF()
             }, label: {
@@ -47,7 +54,7 @@ struct DoneTabView: View {
         }
     }
     private var pdfURL: URL {
-        let fileName = "\(manager.userInfo.clientName).pdf"
+        let fileName = "\(manager.userInfo.clientName)"
         let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let fileURL = directory.appendingPathComponent(fileName).appendingPathExtension("pdf")
         return fileURL as URL
@@ -82,15 +89,13 @@ struct DoneTabView: View {
                 preparedBy.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: 20), range: NSRange(location: 0, length: 12))
                 
                 context.beginPage()
-                var pageCount = 1
-                let pageNumberText = NSAttributedString(string: "Page \(pageCount) of 3", attributes: [.font: UIFont.systemFont(ofSize: 15)])
-                let pageNumberRect = CGRect(x: pageWidth - 100, y: pageHeight - 50, width: 100, height: 50)
-                pageNumberText.draw(in: pageNumberRect)
+                var currentPage = 1
+                drawPageNumber(page: currentPage, totalWidth: pageWidth, totalHeight: pageHeight, context: context)
                 
                 if let logo = UIImage(named: "Clarke_Logo.jpg") {
                     logo.draw(in: CGRect(x: pageWidth / 2 - logo.size.width / 6, y: 340, width: logo.size.width / 3, height: logo.size.height / 3))
                 }
-
+                
                 address.draw(at: CGPoint(x: pageWidth / 2 - address.size().width / 2, y: 50))
                 title.draw(at: CGPoint(x: pageWidth / 2 - title.size().width / 2, y: 80))
                 client.draw(at: CGPoint(x: pageWidth / 2 - client.size().width / 2, y: 155))
@@ -138,11 +143,8 @@ struct DoneTabView: View {
                 preparedBy2.append(preparedByValue)
                 
                 context.beginPage()
-                pageCount = 2
-                let pageNumberText2 = NSAttributedString(string: "Page \(pageCount) of 3", attributes: [.font: UIFont.systemFont(ofSize: 15)])
-                let pageNumberRect2 = CGRect(x: pageWidth - 100, y: pageHeight - 50, width: 100, height: 50)
-                pageNumberText2.draw(in: pageNumberRect2)
-                
+                currentPage += 1
+                drawPageNumber(page: currentPage, totalWidth: pageWidth, totalHeight: pageHeight, context: context)
                 let footer = NSAttributedString(string: "The test locations and loading conditions were at the direction of the above Company. Results indicate the tested anchor(s) held\nthe stated load for the time applied. Error allowance on calibrated equipment is +/- 2%. Testing does not: evaluate suitability or\nadequacy of the anchorage design; verify proper installation or ultimate capacity (unless otherwise noted) of tested anchors; or\naddress performance of untested anchors. Testing does not imply any agreement in or endorsement of the suitability of the anchor\nfor the application tested. Refer to the anchor manufacturers technical information for installation instructions, anchorage design\nprinciples and performance criteria. Proper installation of anchors is critical!", attributes: [.font: UIFont.systemFont(ofSize: 8)])
                 if let logo = UIImage(named: "Clarke_Logo.jpg") {
                     logo.draw(in: CGRect(x: pageWidth / 2 - logo.size.width / 6, y: 50, width: logo.size.width / 3, height: logo.size.height / 3))
@@ -185,7 +187,7 @@ struct DoneTabView: View {
                         
                         let paragraphStyle = NSMutableParagraphStyle()
                         paragraphStyle.alignment = .center
-
+                        
                         let textAttributes = [
                             NSAttributedString.Key.font: font,
                             NSAttributedString.Key.foregroundColor: UIColor.black,
@@ -203,6 +205,8 @@ struct DoneTabView: View {
                 }
                 
                 //Anchor table
+                let initialYPosition = pageHeight - 425 // Starting Y position
+                var currentYPosition = initialYPosition
                 
                 let tableRect2 = CGRect(x: 36, y: pageHeight - 425, width: pageWidth - 72, height: CGFloat(manager.workExperience.count + 1) * 30.0)
                 let numberOfRows2 = manager.workExperience.count + 1
@@ -240,7 +244,18 @@ struct DoneTabView: View {
                 for row in 0..<numberOfRows2 {
                     for column in 0..<numberOfColumns2 {
                         let rowHeight = rowHeights[row]
-                        let cellRect = CGRect(x: tableRect2.minX + columnWidths2[0..<column].reduce(0, +), y: tableRect2.minY + rowHeights[0..<row].reduce(0, +), width: columnWidths2[column], height: rowHeight)
+                        
+                        // Check if the current row will fit in the remaining space
+                        if currentYPosition + rowHeight > pageHeight - 120 {
+                            // Move to a new page
+                            context.beginPage()
+                            if let logo = UIImage(named: "Clarke_Logo.jpg") {
+                                logo.draw(in: CGRect(x: pageWidth / 2 - logo.size.width / 6, y: 50, width: logo.size.width / 3, height: logo.size.height / 3))
+                            }
+                            currentYPosition = 150
+                        }
+                        
+                        let cellRect = CGRect(x: tableRect2.minX + columnWidths2[0..<column].reduce(0, +), y: currentYPosition, width: columnWidths2[column], height: rowHeight)
                         
                         // Add padding to cell rect
                         let paddedCellRect = cellRect.insetBy(dx: padding, dy: padding)
@@ -296,16 +311,26 @@ struct DoneTabView: View {
                         // Add borders to cell
                         context.cgContext.setStrokeColor(UIColor.black.cgColor)
                         context.cgContext.stroke(cellRect)
+                        
+                        // Only increase the currentYPosition after processing the entire row
+                        if column == numberOfColumns2 - 1 {
+                            currentYPosition += rowHeight
+                        }
                     }
                 }
-                context.beginPage()
-                pageCount = 3
-                let pageNumberText3 = NSAttributedString(string: "Page \(pageCount) of 3", attributes: [.font: UIFont.systemFont(ofSize: 15)])
-                let pageNumberRect3 = CGRect(x: pageWidth - 100, y: pageHeight - 50, width: 100, height: 50)
-                pageNumberText3.draw(in: pageNumberRect3)
-                
                 var boxHeight: CGFloat = 200.0 // initial box height
                 let boxPadding: CGFloat = 20.0 // padding around text inside box
+                let commentsSpaceNeeded: CGFloat = boxHeight + boxPadding * 2
+                
+                if currentYPosition + commentsSpaceNeeded > pageHeight - 120 {
+                    context.beginPage()
+                    if let logo = UIImage(named: "Clarke_Logo.jpg") {
+                        logo.draw(in: CGRect(x: pageWidth / 2 - logo.size.width / 6, y: 50, width: logo.size.width / 3, height: logo.size.height / 3))
+                        currentPage += 1
+                        drawPageNumber(page: currentPage, totalWidth: pageWidth, totalHeight: pageHeight, context: context)
+                    }
+                    currentYPosition = 150 // reset to initial starting position
+                }
                 
                 // Bold "Additional Comments:"
                 let boldText = "Additional Comments:\n\n"
@@ -328,95 +353,125 @@ struct DoneTabView: View {
                 let commentSize = combinedAttributedString.boundingRect(with: CGSize(width: pageWidth - 80, height: CGFloat.greatestFiniteMagnitude), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil).size
                 boxHeight = commentSize.height + 2.0 * boxPadding
                 
-                let boxRect = CGRect(x: 30, y: 75, width: pageWidth - 60, height: boxHeight)
+                let boxRect = CGRect(x: 36, y: currentYPosition, width: pageWidth - 72, height: boxHeight)
                 let boxPath = UIBezierPath(rect: boxRect)
                 boxPath.lineWidth = 1.0
                 UIColor.black.setStroke()
                 boxPath.stroke()
                 
-                let commentOrigin = CGPoint(x: 40, y: 75 + boxPadding)
+                let commentOrigin = CGPoint(x: 40, y: currentYPosition + boxPadding)
                 combinedAttributedString.draw(with: CGRect(origin: commentOrigin, size: commentSize), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
                 if let image = manager.userInfo.selectedImage {
                     let imageAspectRatio = image.size.width / image.size.height
                     let frameAspectRatio = pageWidth / pageHeight
                     
+                    let maxImageWidth: CGFloat = pageWidth - 100 // subtracting a margin of 50 from each side
+                    let maxImageHeight: CGFloat = 500 // arbitrary value, leaving space for text and footer
                     var imageWidth: CGFloat
                     var imageHeight: CGFloat
+                    
                     if imageAspectRatio > frameAspectRatio {
-                        // Image is wider than the frame, so set the width to match the frame and calculate the height accordingly
-                        imageWidth = pageWidth / 1.2
+                        // Image is wider than the frame
+                        imageWidth = maxImageWidth
                         imageHeight = imageWidth / imageAspectRatio
                     } else {
-                        // Image is taller than the frame, so set the height to match the frame and calculate the width accordingly
-                        imageHeight = pageHeight / 1.2
+                        // Image is taller than the frame
+                        imageHeight = maxImageHeight
                         imageWidth = imageHeight * imageAspectRatio
                     }
                     
-                    let centerX = pageWidth / 2 - imageWidth / 2 // Center x coordinate of the image
-                    let centerY = pageHeight / 2 - imageHeight / 2 // Center y coordinate of the image
-                    let imageRect = CGRect(x: centerX, y: centerY + 40, width: imageWidth, height: imageHeight)
+                    let centerX = pageWidth / 2 - imageWidth / 2
+                    let centerY = pageHeight / 2 - imageHeight / 2
+                    let imageRect = CGRect(x: centerX, y: centerY + 60, width: imageWidth, height: imageHeight)
                     image.draw(in: imageRect)
                 }
                 let locationMap = NSAttributedString(string: "Location Map", attributes: [.font: UIFont.boldSystemFont(ofSize: 20),.underlineStyle: NSUnderlineStyle.single.rawValue])
-                locationMap.draw(at: CGPoint(x: pageWidth / 2 - locationMap.size().width / 2, y: 620))
+                locationMap.draw(at: CGPoint(x: pageWidth / 2 - locationMap.size().width / 2, y: 635))
                 footer.draw(at: CGPoint(x: 40, y: pageHeight - 120))
                 
-//                context.beginPage()
-//                let origin = CGPoint(x: 50, y: 50) // Adjust the y-coordinate to position the table on the page
-//                let rowHeightP: CGFloat = 200.0 // Adjust the row height as needed
-//                let columnWidths = [CGFloat((pageWidth - 100) / 2 ), CGFloat((pageWidth - 100) / 2 )] // Adjust the column widths as needed
-//                //let padding: CGFloat = 5.0 // Adjust the padding as needed
-//                var yPosition = origin.y
-//
-//                for workExperience in manager.workExperience {
-//                    if let image = workExperience.image {
-//                        // Draw the image
-//                        let imageSize = image.size
-//                        _ = imageSize.width / imageSize.height
-//                        let availableWidth = columnWidths[0] - 2 * padding
-//                        let availableHeight = rowHeightP - 2 * padding
-//                        var imageRect = CGRect.zero
-//                        if imageSize.width > availableWidth || imageSize.height > availableHeight {
-//                            let targetAspectRatio = min(availableWidth / imageSize.width, availableHeight / imageSize.height)
-//                            let targetSize = CGSize(width: imageSize.width * targetAspectRatio, height: imageSize.height * targetAspectRatio)
-//                            let x = origin.x + columnWidths[0] / 2 - targetSize.width / 2
-//                            let y = yPosition + rowHeightP / 2 - targetSize.height / 2
-//                            imageRect = CGRect(origin: CGPoint(x: x, y: y), size: targetSize)
-//                        } else {
-//                            let x = origin.x + columnWidths[0] / 2 - imageSize.width / 2
-//                            let y = yPosition + rowHeightP / 2 - imageSize.height / 2
-//                            imageRect = CGRect(origin: CGPoint(x: x, y: y), size: imageSize)
-//                        }
-//                        image.draw(in: imageRect)
-//
-//                        // Draw the picture comment
-//                        let commentOrigin = CGPoint(x: origin.x + columnWidths[0] + padding, y: yPosition + padding)
-//                        let commentText = workExperience.pictureComment as NSString
-//                        let attributes: [NSAttributedString.Key: Any] = [            .foregroundColor: UIColor.black,            .font: UIFont.systemFont(ofSize: 14)        ]
-//                        commentText.draw(at: commentOrigin, withAttributes: attributes)
-//
-//                        // Draw table lines
-//                        let cgContext = context.cgContext
-//                        cgContext.move(to: CGPoint(x: origin.x, y: yPosition))
-//                        cgContext.addLine(to: CGPoint(x: origin.x, y: yPosition + rowHeightP))
-//                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths.reduce(0, +), y: yPosition + rowHeightP))
-//                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths.reduce(0, +), y: yPosition))
-//                        cgContext.closePath()
-//                        cgContext.strokePath()
-//
-//                        cgContext.move(to: CGPoint(x: origin.x + columnWidths[0], y: yPosition))
-//                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths[0], y: yPosition + rowHeightP))
-//                        cgContext.strokePath()
-//
-//                        // Update the y-position for the next image
-//                        yPosition += rowHeightP + 20
-//                    }
-//                }
+                let hasImages = manager.workExperience.contains { $0.image != nil }
+                
+                // If no images, skip drawing the last page.
+                if !hasImages {
+                    return
+                }
+                
+                context.beginPage()
+                currentPage += 1
+                drawPageNumber(page: currentPage, totalWidth: pageWidth, totalHeight: pageHeight, context: context)
+                let origin = CGPoint(x: 50, y: 50) // Adjust the y-coordinate to position the table on the page
+                let rowHeightP: CGFloat = 200.0 // Adjust the row height as needed
+                let columnWidths = [CGFloat((pageWidth - 100) / 2 ), CGFloat((pageWidth - 100) / 2 )] // Adjust the column widths as needed
+                var yPosition = origin.y
+
+                // Initialize a variable to hold the height of the logo
+                var logoHeight: CGFloat = 0
+
+                if let logo = UIImage(named: "Clarke_Logo.jpg") {
+                    let logoRect = CGRect(x: pageWidth / 2 - logo.size.width / 6, y: yPosition, width: logo.size.width / 3, height: logo.size.height / 3)
+                    logo.draw(in: logoRect)
+                    logoHeight = logo.size.height / 3
+                }
+
+                // Add a spacer below the logo.
+                let spacer: CGFloat = 30  // Adjust this value based on how much space you want.
+                yPosition += logoHeight + spacer
+
+                for workExperience in manager.workExperience {
+                    if let image = workExperience.image {
+                        // Draw the image
+                        let imageSize = image.size
+                        _ = imageSize.width / imageSize.height
+                        let availableWidth = columnWidths[0] - 2 * padding
+                        let availableHeight = rowHeightP - 2 * padding
+                        var imageRect = CGRect.zero
+                        if imageSize.width > availableWidth || imageSize.height > availableHeight {
+                            let targetAspectRatio = min(availableWidth / imageSize.width, availableHeight / imageSize.height)
+                            let targetSize = CGSize(width: imageSize.width * targetAspectRatio, height: imageSize.height * targetAspectRatio)
+                            let x = origin.x + columnWidths[0] / 2 - targetSize.width / 2
+                            let y = yPosition + rowHeightP / 2 - targetSize.height / 2
+                            imageRect = CGRect(origin: CGPoint(x: x, y: y), size: targetSize)
+                        } else {
+                            let x = origin.x + columnWidths[0] / 2 - imageSize.width / 2
+                            let y = yPosition + rowHeightP / 2 - imageSize.height / 2
+                            imageRect = CGRect(origin: CGPoint(x: x, y: y), size: imageSize)
+                        }
+                        image.draw(in: imageRect)
+                        
+                        // Draw the picture comment
+                        let commentOrigin = CGPoint(x: origin.x + columnWidths[0] + padding, y: yPosition + padding)
+                        let commentText = workExperience.pictureComment as NSString
+                        let attributes: [NSAttributedString.Key: Any] = [            .foregroundColor: UIColor.black,            .font: UIFont.systemFont(ofSize: 14)        ]
+                        commentText.draw(at: commentOrigin, withAttributes: attributes)
+                        
+                        // Draw table lines
+                        let cgContext = context.cgContext
+                        cgContext.move(to: CGPoint(x: origin.x, y: yPosition))
+                        cgContext.addLine(to: CGPoint(x: origin.x, y: yPosition + rowHeightP))
+                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths.reduce(0, +), y: yPosition + rowHeightP))
+                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths.reduce(0, +), y: yPosition))
+                        cgContext.closePath()
+                        cgContext.strokePath()
+                        
+                        cgContext.move(to: CGPoint(x: origin.x + columnWidths[0], y: yPosition))
+                        cgContext.addLine(to: CGPoint(x: origin.x + columnWidths[0], y: yPosition + rowHeightP))
+                        cgContext.strokePath()
+                        
+                        // Update the y-position for the next image
+                        yPosition += rowHeightP + 20
+                    }
+                }
+                footer.draw(at: CGPoint(x: 40, y: pageHeight - 120))
             }
             showShareSheet = true
         } catch {
             print(error.localizedDescription)
         }
+    }
+    private func drawPageNumber(page: Int, totalWidth: CGFloat, totalHeight: CGFloat, context: UIGraphicsPDFRendererContext) {
+        let pageNumberText = NSAttributedString(string: "Page \(page)", attributes: [.font: UIFont.systemFont(ofSize: 15)])
+        let pageNumberRect = CGRect(x: totalWidth - 100, y: totalHeight - 50, width: 100, height: 50)
+        pageNumberText.draw(in: pageNumberRect)
     }
 }
 

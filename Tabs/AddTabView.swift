@@ -151,7 +151,7 @@ struct ImageCanvas: View {
             image.draw(in: CGRect(origin: .zero, size: imageSize))
             
             for pointWithID in points {
-                let yOffset: CGFloat = 50
+                let yOffset: CGFloat = 120
                 let point = CGPoint(x: (pointWithID.point.x - 10) / scaleFactor, y: (pointWithID.point.y - yOffset) / scaleFactor)
                 let number = pointWithID.number
                 
